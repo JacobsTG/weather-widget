@@ -2,16 +2,16 @@
 <html>
 <head>
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.bundle.js"></script>
-    <script>
-
-</script>
 </head>
     <body>
     <p id="weather">Here's the weather:<p>
 
     <p id="icon">icon goes here<p>
 
-    <canvas id="myChart" width="200" height="200"></canvas>
+		<canvas id="myChart" width="400" height="300"></canvas><br>
+
+
+		<canvas id="myRainChart" width="400" height="300"></canvas>
 
 
     <button onclick="b()">Submit</button>
@@ -38,11 +38,17 @@
 					var questionMark = '<svg style="width:48px;height:48px" viewBox="0 0 24 24"><path fill="#000000" d="M15.07,11.25L14.17,12.17C13.45,12.89 13,13.5 13,15H11V14.5C11,13.39 11.45,12.39 12.17,11.67L13.41,10.41C13.78,10.05 14,9.55 14,9C14,7.89 13.1,7 12,7A2,2 0 0,0 10,9H8A4,4 0 0,1 12,5A4,4 0 0,1 16,9C16,9.88 15.64,10.67 15.07,11.25M13,19H11V17H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2Z" /></svg>';
 					var chartdiv = '<div id="curve_chart" style="width: 900px; height: 500px"></div>';
 					var forecastjson;
+					var tempchartdiv = '<canvas id="myChart" width="400" height="300"></canvas>';
 
 					console.log("Variables set up");
 
 					console.log("Getting data from forecast.io");
-					$.getJSON(url + apiKey + "/" + lati + "," + longi + "?callback=?", function(data){
+					var forecastdata;
+
+					$.getJSON(url + apiKey + "/" + lati + "," + longi + "?callback=?",
+					function(data)
+					{
+						forecastdata = data;
 						console.log("Data captured from forecast.io");
 						console.log(data);
 						console.log("Sending out current temp and summary");
@@ -110,111 +116,66 @@
 						console.log("Icon selection has been made.  Now replacing icon anchor with icon svg information");
 						$('#icon').html(iconsvg);
 
+						console.log("Create a holder for hourly time and temperature data.");
 						var hourlyData = data.hourly.data;
 						var times = [];
 						var temps = [];
+						var rainPercentage = [];
 
-						$.each(hourlyData, function(index, value) {
+						console.log("Copy hourly data from the forecast.io data package into my own package of just hourly data.");
+						console.log("Convert the time data from epoch time (given by forecast.io) to javascript time. Then copy them into my own array.");
+						$.each(hourlyData,
+							function(index, value)
+							{
 							var theTime = new Date(hourlyData[index]["time"] * 1000);
 							times.push(theTime);
 							temps.push(hourlyData[index]["temperature"]);
+							rainPercentage.push(hourlyData[index]["precipProbability"] * 100);
+							}
+						);
+
+
+
+						console.log("Get the chart element by id.");
+
+						var ctx = document.getElementById("myChart").getContext("2d");
+						var rainctx = document.getElementById("myRainChart");
+
+						console.log(ctx);
+
+
+						var chartdata =
+						{
+							labels: times,
+							datasets:[{label: "Hourly Temperature Data",data: temps}]
+						};
+
+						var rainChartData =
+						{
+							labels: times,
+							datasets:[{label: "Hourly Rain Percentage", data: rainPercentage}]
+						};
+
+						console.log(chartdata);
+
+
+						var myChart = new Chart(ctx,
+						{
+							type: 'line',
+							data: chartdata,
+							options: {xAxes: [{display: false}]}
 						});
+
+						var myRainChart = new Chart(rainctx,
+						{
+							type: 'line',
+							data: rainChartData,
+							options: {xAxes: [{display: false}]}
+						});
+
+
 					});
-
 				}
-
-
-
-
-              //console.log(data.minutely.data[0].time);
-
-							/*
-							var temptimestamps = '[';
-
-              for(i=0; i < data.minutely.data.length; i++)
-              {
-              	var temp = new Date(data.minutely.data[i].time * 1000);
-              	var temptimestring = temp.toLocaleTimeString();
-              	temptimestamps += '"' + temptimestring + '"';
-              	if (i+1 == data.minutely.data.length)
-              	{
-              		temptimestamps += "]";
-              	}
-              	else
-              	{
-              		temptimestamps += ',';
-              	}
-              }
-
-              var temprainfall = '[';
-
-              for(i=0; i < data.minutely.data.length; i++)
-              {
-              	var temp = data.minutely.data[i].precipIntensity;
-              	temprainfall += '"' + temp + '"';
-              	if (i+1 == data.minutely.data.length)
-              	{
-              		temprainfall += "]";
-              	}
-              	else
-              	{
-              		temprainfall += ',';
-              	}
-              }
-
-              //var temptimestamp = new Date(data.minutely.data[0].time * 1000);
-              //console.log(temprainfall);
-
-              console.log("Getting chart element from document");
-              var ctx = document.getElementById("myChart");
-
-
-
-              console.log("setting up new chart");
-
-							/*
-              var chartdata =
-              {
-              	labels: temptimestamps,
-              	datasets:
-              	[
-              		{
-              			data: temprainfall,
-              		}
-              	]
-              };
-              console.log(chartdata);
-              */
-
-              //var myChart = new Chart (ctx, {
-              //	type: 'line',
-              //	labels: temptimestamps,
-              //});
-
-            //var temptimestamp = data.minutely.data.time[0] * 1000;
-
-            /*
-            var ctx = document.getElementById("myChart");
-			var myChart = new Chart(ctx, {
-    			type: 'line',
-    			data: {
-        			labels: [temptimestamp],
-        			datasets: [{
-        				data: [data.minutely.precipIntensity[0]]
-        			}]
-    			},
-    			options: {
-        			scales: {
-            			yAxes: [{
-                			ticks: {
-                    			beginAtZero:true
-                			}
-            			}]
-        			}
-    			}
-			});
-			*/
-        //}
         </script>
 
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
