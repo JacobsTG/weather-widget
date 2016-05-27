@@ -2,18 +2,131 @@
 <html>
 <head>
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.3/Chart.bundle.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script type="text/javascript">
+		console.log("Starting Javascript for weather display");
+
+		console.log("Defining and setting up variables.");
+		var apiKey = '35f0e4b226c891aba95107313f68443d';
+		var url = 'https://api.forecast.io/forecast/';
+		var lati = 35.394320;
+		var longi = -86.184506;
+		var prepareForecastDataFunctionPointer;
+
+		console.log("Prepare URL string to retrieve the JSON string from forecast.io");
+		url = url + apiKey + "/" + lati + "," + longi + "?callback=?"
+
+		console.log("Request forecast from forecast.io via a getJSON call");
+		$.getJSON(url, prepareForecastData);
+
+		//wait for prepareForecastData to complete
+
+		//displayForecastData(forecastData);
+		console.log("End of Javascript for weather display");
+
+		function prepareForecastData(forecastData)
+		{
+			console.log("Starting prepareForecastData");
+			console.log("Printing Forecast Data in console log");
+			console.log(forecastData);
+
+			console.log("Create a holder for hourly time and temperature data.");
+			var hourlyData = forecastData.hourly.data;
+			var times = [];
+			var temps = [];
+			var rainPercentage = [];
+
+			console.log("Copy hourly data from the forecast.io data package into my own package of just hourly data.");
+			console.log("Convert the time data from epoch time (given by forecast.io) to javascript time. Then copy them into my own array.");
+			$.each(hourlyData,
+				function(index, value)
+				{
+				var theTime = new Date(hourlyData[index]["time"] * 1000);
+				times.push(theTime);
+				temps.push(hourlyData[index]["temperature"]);
+				rainPercentage.push(hourlyData[index]["precipProbability"] * 100);
+				}
+			);
+
+
+			displayForecastData(forecastData, hourlyData, times, temps, rainPercentage);
+			console.log("End of prepareForecastData");
+		}
+
+		function displayForecastData(forecastData, hourlyData, times, temps, rainPercentage)
+		{
+			console.log("Starting displayForecastData");
+
+			displayTemperature(forecastData.currently.temperature);
+			displaySummary(forecastData.currently.summary);
+
+			createHourlyTemperatureChart(times, temps);
+			createHourlyRainChart(times, rainPercentage);
+
+			console.log("End of displayForecastData");
+		}
+
+		function displayTemperature(currentTemperature)
+		{
+			console.log("Current Temperature = " + currentTemperature);
+			document.getElementById("weatherText").innerHTML = "Current Temperature = " + currentTemperature;
+		}
+		function displaySummary(currentSummary)
+		{
+			console.log("Current Weather Summary = " + currentSummary);
+			document.getElementById("weatherSummary").innerHTML = "Current Forecast Summary = " + currentSummary;
+		}
+		function createHourlyTemperatureChart(times, temps)
+		{
+			var chartdata =
+			{
+				labels: times,
+				datasets:[{label: "Hourly Temperature Data", data: temps}]
+			};
+
+			var ctx = document.getElementById("myChart").getContext("2d");
+
+			var myChart = new Chart(ctx,
+			{
+				type: 'line',
+				data: chartdata,
+				options: {maintainAspectRatio: true, responsive: true, xAxes: [{display: false}]}
+			});
+		}
+
+		function createHourlyRainChart(times, rainPercentage)
+		{
+			var chartdata =
+			{
+				labels: times,
+				datasets:[{label: "Hourly Rain Percentage Data", data: rainPercentage}]
+			};
+
+			var ctx = document.getElementById("myRainChart").getContext("2d");
+
+			var myChart = new Chart(ctx,
+			{
+				type: 'line',
+				data: chartdata,
+				options: {maintainAspectRatio: true, responsive: true, xAxes: [{display: false}]}
+			});
+		}
+
+	</script>
 </head>
     <body>
-    <p id="weather">Here's the weather:<p>
+    <p id="weatherText"><p>
+		<p id ="weatherSummary"><p>
 
     <p id="icon">icon goes here<p>
 
-		<canvas id="myChart" width="400" height="300"></canvas><br>
-
-
+		<div width = "75%">
+		<canvas id="myChart" width="800" height="400"></canvas>
+	  </div>
+		<br>
 		<canvas id="myRainChart" width="400" height="300"></canvas>
 
-
+<!--
     <button onclick="b()">Submit</button>
         <script>
 
@@ -179,6 +292,6 @@
         </script>
 
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-
+-->
     </body>
 </html>
