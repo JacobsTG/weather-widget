@@ -17,74 +17,77 @@
 		url = url + apiKey + "/" + lati + "," + longi + "?callback=?"
 
 		console.log("Request forecast from forecast.io via a getJSON call");
-		$.getJSON(url, prepareForecastData);
+		$.getJSON(url, prepareAndDisplayForecastData);
 
-		//wait for prepareForecastData to complete
-
-		//displayForecastData(forecastData);
 		console.log("End of Javascript for weather display");
 
-		function prepareForecastData(forecastData)
+		function prepareAndDisplayForecastData(forecastData)
 		{
-			console.log("Starting prepareForecastData");
+			console.log("Starting prepareAndDisplayForecastData");
 			console.log("Printing Forecast Data in console log");
 			console.log(forecastData);
 
-			console.log("Create a holder for hourly time and temperature data.");
-			var hourlyData = forecastData.hourly.data;
+			console.log("Create variables for times, temperature, and rain percentage data.");
 			var times = [];
 			var temps = [];
 			var rainPercentage = [];
 
-			console.log("Copy hourly data from the forecast.io data package into my own package of just hourly data.");
-			console.log("Convert the time data from epoch time (given by forecast.io) to javascript time. Then copy them into my own array.");
-			$.each(hourlyData,
-				function(index, value)
-				{
-				var theTime = new Date(hourlyData[index]["time"] * 1000);
-				times.push(theTime);
-				temps.push(hourlyData[index]["temperature"]);
-				rainPercentage.push(hourlyData[index]["precipProbability"] * 100);
-				}
-			);
+			console.log("Populate the time array");
+			createDataArray(forecastData.hourly.data, times, "time");
 
+			console.log("Populate the temperature array");
+			createDataArray(forecastData.hourly.data, temps, "temperature");
 
-			displayForecastData(forecastData, hourlyData, times, temps, rainPercentage);
+			console.log("Populate the rainPercentage array");
+			createDataArray(forecastData.hourly.data, rainPercentage, "precipProbability");
+
+			displayCurrentForecastInfo("Current Temperature = ", forecastData.currently.temperature, "weatherText");
+			displayCurrentForecastInfo("Current Summary = ", forecastData.currently.summary, "weatherSummary");
+
+			createChart(times, temps, "Hourly Temperature Data", "myTempChart");
+			createChart(times, rainPercentage, "Hourly Rain Percentage", "myRainChart");
+
 			console.log("End of prepareForecastData");
 		}
 
-		function displayForecastData(forecastData, hourlyData, times, temps, rainPercentage)
+		function createDataArray (originalObjects, originalArray, element)
 		{
-			console.log("Starting displayForecastData");
-
-			displayTemperature(forecastData.currently.temperature);
-			displaySummary(forecastData.currently.summary);
-
-			createHourlyTemperatureChart(times, temps);
-			createHourlyRainChart(times, rainPercentage);
-
-			console.log("End of displayForecastData");
+				console.log("Start of createDataArray function");
+				$.each(originalObjects,
+					function (index)
+					{
+						if(element == "time")
+						{
+							//console.log("Convert the time data from epoch time (given by forecast.io) to javascript time. Then copy them into my own array.");
+							var timeStamp = new Date(originalObjects[index][element]);
+							originalArray.push(timeStamp);
+						}
+						else
+						{
+							//console.log("Copy the object data into our own array.");
+							originalArray.push(originalObjects[index][element]);
+						}
+					});
+				console.log("End of createDataArray function");
 		}
 
-		function displayTemperature(currentTemperature)
+		function displayCurrentForecastInfo(message, number, element)
 		{
-			console.log("Current Temperature = " + currentTemperature);
-			document.getElementById("weatherText").innerHTML = "Current Temperature = " + currentTemperature;
+			console.log(message + number);
+			document.getElementById(element).innerHTML = message + number;
 		}
-		function displaySummary(currentSummary)
+
+		function createChart(xdata, ydata, datalabel, element)
 		{
-			console.log("Current Weather Summary = " + currentSummary);
-			document.getElementById("weatherSummary").innerHTML = "Current Forecast Summary = " + currentSummary;
-		}
-		function createHourlyTemperatureChart(times, temps)
-		{
+			console.log("Starting createChart function");
+
 			var chartdata =
 			{
-				labels: times,
-				datasets:[{label: "Hourly Temperature Data", data: temps}]
+				labels: xdata,
+				datasets:[{label: datalabel, data: ydata}]
 			};
 
-			var ctx = document.getElementById("myChart").getContext("2d");
+			var ctx = document.getElementById(element);
 
 			var myChart = new Chart(ctx,
 			{
@@ -92,26 +95,9 @@
 				data: chartdata,
 				options: {maintainAspectRatio: true, responsive: true, xAxes: [{display: false}]}
 			});
+
+			console.log("End of createChart function");
 		}
-
-		function createHourlyRainChart(times, rainPercentage)
-		{
-			var chartdata =
-			{
-				labels: times,
-				datasets:[{label: "Hourly Rain Percentage Data", data: rainPercentage}]
-			};
-
-			var ctx = document.getElementById("myRainChart").getContext("2d");
-
-			var myChart = new Chart(ctx,
-			{
-				type: 'line',
-				data: chartdata,
-				options: {maintainAspectRatio: true, responsive: true, xAxes: [{display: false}]}
-			});
-		}
-
 	</script>
 </head>
     <body>
@@ -120,9 +106,7 @@
 
     <p id="icon">icon goes here<p>
 
-		<div width = "75%">
-		<canvas id="myChart" width="800" height="400"></canvas>
-	  </div>
+		<canvas id="myTempChart" width="800" height="400"></canvas>
 		<br>
 		<canvas id="myRainChart" width="400" height="300"></canvas>
 
